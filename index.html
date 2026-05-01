@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drug–Nutrient Interaction Tool</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88,166,255,0.15);
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --major: #f85149;
+      --moderate: #d29922;
+      --minor: #3fb950;
+      --info: #58a6ff;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: #0d1117;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #1f6feb, #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .logo h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+    .logo span { color: var(--muted); font-size: 12px; margin-left: 8px; font-weight: 400; }
+    .header-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ─── HERO SEARCH ─── */
+    .hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 52px 24px 0;
+      text-align: center;
+    }
+    .hero h2 {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--text) 40%, var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+
+    .search-wrap {
+      position: relative;
+      display: flex;
+      gap: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      overflow: visible;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+    .search-icon {
+      position: absolute;
+      left: 18px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 17px;
+      pointer-events: none;
+    }
+    #searchInput {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 16px;
+      padding: 14px 14px 14px 48px;
+      min-width: 0;
+    }
+    #searchInput::placeholder { color: var(--muted); }
+    #clearBtn {
+      background: none; border: none;
+      color: var(--muted); font-size: 18px;
+      padding: 0 14px; cursor: pointer;
+      display: none;
+      align-items: center;
+    }
+    #clearBtn:hover { color: var(--text); }
+    #searchBtn {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 0 11px 11px 0;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    #searchBtn:hover { opacity: 0.88; }
+
+    /* ─── CHIPS ─── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    /* ─── EMPTY STATE ─── */
+    #emptyState {
+      text-align: center;
+      padding: 60px 0 20px;
+    }
+    #emptyState .big-icon { font-size: 56px; margin-bottom: 16px; }
+    #emptyState h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    #emptyState p { color: var(--muted); font-size: 14px; max-width: 420px; margin: 0 auto; }
+    .stat-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 36px;
+    }
+    .stat { text-align: center; }
+    .stat .num { font-size: 26px; font-weight: 800; color: var(--accent); }
+    .stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ─── RESULTS HEADER ─── */
+    #resultsHeader {
+      display: none;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #resultsHeader .left h3 {
+      font-size: 17px; font-weight: 700;
+    }
+    #resultsHeader .left p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    #exportBtn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #exportBtn:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ─── SEVERITY SUMMARY BAR ─── */
+    #severityBar {
+      display: none;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .sev-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .sev-pill.major    { background: rgba(248,81,73,0.12);  color: var(--major);    border: 1px solid rgba(248,81,73,0.25); }
+    .sev-pill.moderate { background: rgba(210,153,34,0.12); color: var(--moderate); border: 1px solid rgba(210,153,34,0.25); }
+    .sev-pill.minor    { background: rgba(63,185,80,0.1);   color: var(--minor);    border: 1px solid rgba(63,185,80,0.2); }
+    .sev-pill.informational { background: rgba(88,166,255,0.1); color: var(--info); border: 1px solid rgba(88,166,255,0.2); }
+    .sev-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .major .sev-dot    { background: var(--major); }
+    .moderate .sev-dot { background: var(--moderate); }
+    .minor .sev-dot    { background: var(--minor); }
+    .informational .sev-dot { background: var(--info); }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: #484f57; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .sev-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .badge-major    { background: rgba(248,81,73,0.12);  color: var(--major);    border: 1px solid rgba(248,81,73,0.3); }
+    .badge-moderate { background: rgba(210,153,34,0.12); color: var(--moderate); border: 1px solid rgba(210,153,34,0.3); }
+    .badge-minor    { background: rgba(63,185,80,0.1);   color: var(--minor);    border: 1px solid rgba(63,185,80,0.25); }
+    .badge-informational { background: rgba(88,166,255,0.1); color: var(--info); border: 1px solid rgba(88,166,255,0.2); }
+
+    .card-title-wrap { flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ev-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .ev-established  { background: rgba(63,185,80,0.1);   color: var(--minor); }
+    .ev-probable     { background: rgba(210,153,34,0.1);  color: var(--moderate); }
+    .ev-possible     { background: rgba(88,166,255,0.1);  color: var(--info); }
+    .ev-theoretical  { background: var(--surface2);       color: var(--muted); }
+
+    .chevron {
+      color: var(--muted);
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .card.open .chevron { transform: rotate(180deg); }
+
+    .card-body {
+      display: none;
+      padding: 0 16px 16px;
+    }
+    .card.open .card-body { display: block; }
+
+    .card-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 14px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 560px) { .detail-grid { grid-template-columns: 1fr; } }
+    .detail-item {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .detail-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .detail-full {
+      grid-column: 1 / -1;
+    }
+
+    .mgmt-box {
+      background: rgba(88,166,255,0.07);
+      border: 1px solid rgba(88,166,255,0.18);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .mgmt-box strong { color: var(--accent); }
+
+    .timing-box {
+      background: rgba(210,153,34,0.07);
+      border: 1px solid rgba(210,153,34,0.2);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 12px;
+      color: var(--moderate);
+      margin-top: 8px;
+    }
+    .timing-box::before { content: "⏱ "; }
+
+    /* ─── SECTION HEADER ─── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin: 24px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── NO RESULTS ─── */
+    .no-results {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--muted);
+    }
+    .no-results h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .no-results p { font-size: 14px; }
+
+    /* ─── DISCLAIMER ─── */
+    .disclaimer {
+      margin-top: 48px;
+      padding: 14px 18px;
+      background: rgba(248,81,73,0.05);
+      border: 1px solid rgba(248,81,73,0.15);
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .disclaimer strong { color: #f85149; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚗</div>
+    <h1>Drug–Nutrient Interactions <span>Clinical Reference</span></h1>
+  </div>
+  <div class="header-count" id="headerCount">Loading…</div>
+</header>
+
+<div style="max-width:760px;margin:0 auto;padding:52px 24px 0;text-align:center">
+  <h2 style="font-size:30px;font-weight:800;letter-spacing:-0.5px;margin-bottom:10px;
+             background:linear-gradient(135deg,#e6edf3 40%,#7d8590);
+             -webkit-background-clip:text;-webkit-text-fill-color:transparent">
+    Look up any drug or nutrient
+  </h2>
+  <p style="color:#7d8590;font-size:15px;margin-bottom:28px">
+    Type a drug name, vitamin, mineral, or supplement to see all known interactions
+  </p>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="e.g. metformin, warfarin, vitamin D, magnesium, St. John's Wort…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button id="clearBtn" title="Clear">✕</button>
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <div class="chips" id="chips">
+    <span class="chip-label">Try:</span>
+    <span class="chip" onclick="go('Metformin')">Metformin</span>
+    <span class="chip" onclick="go('Warfarin')">Warfarin</span>
+    <span class="chip" onclick="go('Omeprazole')">Omeprazole</span>
+    <span class="chip" onclick="go('Levothyroxine')">Levothyroxine</span>
+    <span class="chip" onclick="go('Statins')">Statins</span>
+    <span class="chip" onclick="go('Vitamin D')">Vitamin D</span>
+    <span class="chip" onclick="go('Magnesium')">Magnesium</span>
+    <span class="chip" onclick="go('Iron')">Iron</span>
+    <span class="chip" onclick="go('Vitamin K')">Vitamin K</span>
+    <span class="chip" onclick="go('St. John\'s Wort')">St. John's Wort</span>
+    <span class="chip" onclick="go('Zinc')">Zinc</span>
+    <span class="chip" onclick="go('Furosemide')">Furosemide</span>
+    <span class="chip" onclick="go('Grapefruit')">Grapefruit</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div id="emptyState">
+    <div class="big-icon">🧬</div>
+    <h3>100+ interactions across 50+ drugs &amp; nutrients</h3>
+    <p>Search any medication, vitamin, mineral, or supplement above to see all known clinically relevant interactions</p>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="num" id="statTotal">—</div>
+        <div class="lbl">Interactions</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statMajor">—</div>
+        <div class="lbl">Major</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statDrugs">—</div>
+        <div class="lbl">Drugs covered</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsHeader">
+    <div class="left">
+      <h3 id="resultsTitle">Results</h3>
+      <p id="resultsSubtitle"></p>
+    </div>
+    <button id="exportBtn" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+
+  <div id="severityBar" style="display:flex"></div>
+  <div id="cards"></div>
+
+  <div class="disclaimer">
+    <strong>Clinical Disclaimer:</strong> This tool is intended as a reference aid for healthcare professionals and informed patients. Data reflects established pharmacological literature but may not capture all individual patient factors, rare interactions, or recent evidence updates. Always verify with authoritative references (Stockley's Drug Interactions, Natural Medicines Database, product monographs) and consult a qualified clinician before making clinical decisions. This tool does not replace professional medical advice.
+  </div>
+</div>
+
+<script>
+// ── Inline database (same as interactions-db.js) ──
+const DB = [
+  { drug:"Metformin", drug_aliases:["glucophage","biguanide","fortamet","glumetza"], nutrient:"Vitamin B12", nutrient_aliases:["b12","cobalamin","cyanocobalamin","methylcobalamin"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Metformin interferes with calcium-dependent membrane binding of the intrinsic factor–B12 complex in the terminal ileum, impairing B12 absorption.", effect:"B12 deficiency in 10–30% of long-term users; can cause peripheral neuropathy and megaloblastic anemia.", management:"Check B12 annually in long-term users. Supplement with crystalline B12 (sublingual or IM bypasses the absorption defect). Calcium supplementation may partially reverse this interaction.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Metformin", drug_aliases:["glucophage","biguanide","fortamet","glumetza"], nutrient:"Folate", nutrient_aliases:["folic acid","folacin","b9","vitamin b9"], severity:"minor", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Metformin may reduce folate absorption via altered intestinal pH and mild mucosal changes.", effect:"Mild folate reduction reported; evidence less consistent than B12 depletion.", management:"Ensure adequate dietary folate; consider supplementation in patients with additional risk factors (pregnancy, poor diet).", evidence:"possible", onset:"chronic", timing_note:null },
+  { drug:"Warfarin", drug_aliases:["coumadin","jantoven","anticoagulant"], nutrient:"Vitamin K", nutrient_aliases:["phylloquinone","menaquinone","k1","k2","vit k"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Warfarin inhibits VKORC1, blocking recycling of vitamin K needed for clotting factors II, VII, IX, X. Dietary vitamin K directly antagonizes this effect.", effect:"Increased vitamin K raises INR resistance; abrupt decreases raise INR (bleeding risk).", management:"Maintain consistent vitamin K intake rather than eliminating it. Avoid drastic changes in green leafy vegetables. Adjust warfarin dose to diet.", evidence:"established", onset:"acute", timing_note:"Effect apparent within 24–72 hours of dietary change" },
+  { drug:"Warfarin", drug_aliases:["coumadin","jantoven"], nutrient:"Vitamin E", nutrient_aliases:["tocopherol","alpha-tocopherol","vit e"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"High-dose vitamin E (>400 IU/day) inhibits vitamin K-dependent carboxylation of clotting factors and inhibits platelet aggregation.", effect:"Enhanced anticoagulant effect; elevated INR; increased bleeding risk.", management:"Limit vitamin E to <200 IU/day during warfarin therapy. Monitor INR if patient uses vitamin E supplements.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Warfarin", drug_aliases:["coumadin","jantoven"], nutrient:"Coenzyme Q10", nutrient_aliases:["coq10","ubiquinol","ubiquinone"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"CoQ10 has structural similarity to vitamin K2 (menaquinone) and may exert mild vitamin K-like activity.", effect:"May reduce warfarin efficacy; decreased INR reported in case series.", management:"Monitor INR if starting or stopping CoQ10 supplementation; adjust warfarin dose as needed.", evidence:"possible", onset:"chronic", timing_note:null },
+  { drug:"Warfarin", drug_aliases:["coumadin","jantoven"], nutrient:"Omega-3 / Fish Oil", nutrient_aliases:["fish oil","epa","dha","omega 3","omega-3 fatty acids"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"High-dose omega-3 fatty acids inhibit platelet thromboxane A2 synthesis and may modestly impair clotting factor synthesis.", effect:"Enhanced anticoagulant and antiplatelet effect at doses >3g/day EPA+DHA.", management:"Monitor INR if patient uses fish oil supplements >1g/day. Doses <1g/day are generally safe.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Warfarin", drug_aliases:["coumadin","jantoven"], nutrient:"St. John's Wort", nutrient_aliases:["hypericum perforatum","stjohns wort","st johns wort","sjw"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"St. John's Wort induces CYP2C9 (warfarin's primary metabolic enzyme) and P-glycoprotein, increasing warfarin clearance.", effect:"Significantly reduced warfarin plasma levels; subtherapeutic anticoagulation; thromboembolism risk.", management:"AVOID COMBINATION. If unavoidable, monitor INR very closely and expect major dose increases.", evidence:"established", onset:"chronic", timing_note:"Effect builds over 2–4 weeks of St. John's Wort use" },
+  { drug:"Levothyroxine", drug_aliases:["synthroid","eltroxin","euthyrox","t4","thyroxine"], nutrient:"Calcium", nutrient_aliases:["calcium carbonate","calcium citrate","ca","cal"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Calcium ions form insoluble complexes with levothyroxine in the GI tract, reducing absorption by up to 40%.", effect:"Reduced levothyroxine bioavailability; hypothyroidism may worsen or be difficult to control.", management:"Take levothyroxine on an empty stomach (30–60 min before breakfast). Separate calcium by at least 4 hours.", evidence:"established", onset:"acute", timing_note:"Separate by minimum 4 hours" },
+  { drug:"Levothyroxine", drug_aliases:["synthroid","eltroxin","euthyrox","t4","thyroxine"], nutrient:"Iron", nutrient_aliases:["ferrous sulfate","ferrous gluconate","iron supplement","fe","ferritin"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Iron forms insoluble ferric-levothyroxine chelates in the GI tract.", effect:"Reduced levothyroxine absorption and bioavailability; difficult thyroid control.", management:"Separate levothyroxine and iron by at least 4 hours. Take levothyroxine first thing in the morning.", evidence:"established", onset:"acute", timing_note:"Separate by minimum 4 hours" },
+  { drug:"Levothyroxine", drug_aliases:["synthroid","eltroxin","euthyrox","t4","thyroxine"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg","magnesium oxide","magnesium citrate","magnesium glycinate"], severity:"minor", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Magnesium may form complexes with levothyroxine, reducing absorption.", effect:"Mild reduction in levothyroxine bioavailability.", management:"Separate magnesium supplements by at least 4 hours from levothyroxine.", evidence:"possible", onset:"acute", timing_note:"Separate by 4 hours" },
+  { drug:"Omeprazole / PPIs", drug_aliases:["omeprazole","esomeprazole","pantoprazole","lansoprazole","rabeprazole","nexium","prilosec","protonix","prevacid","ppi"], nutrient:"Vitamin B12", nutrient_aliases:["b12","cobalamin","cyanocobalamin","methylcobalamin"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Gastric acid is required for pepsin-mediated release of B12 from food proteins. PPIs suppress acid production, impairing this step. Crystalline B12 supplements are not affected.", effect:"B12 deficiency with long-term use (>2 years), especially in elderly. Risk of neuropathy and anemia.", management:"Monitor B12 in patients on long-term PPI therapy. Supplement with crystalline B12 (sublingual or oral) if levels low.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Omeprazole / PPIs", drug_aliases:["omeprazole","esomeprazole","pantoprazole","lansoprazole","rabeprazole","nexium","prilosec","protonix","prevacid","ppi"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg","magnesium oxide"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Likely inhibition of intestinal TRPM6/7 transient receptor potential channels responsible for active magnesium absorption.", effect:"Hypomagnesemia (sometimes severe) with long-term use; can cause tetany, seizures, cardiac arrhythmias.", management:"Monitor serum magnesium in long-term PPI users (>1 year). Supplement if deficient. May not correct until PPI is stopped.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Omeprazole / PPIs", drug_aliases:["omeprazole","esomeprazole","pantoprazole","lansoprazole","rabeprazole","nexium","prilosec","protonix","prevacid","ppi"], nutrient:"Calcium", nutrient_aliases:["calcium","ca","calcium carbonate"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Calcium carbonate dissolution requires gastric acid. PPIs reduce acid, impairing calcium carbonate absorption. Calcium citrate absorption is acid-independent.", effect:"Reduced calcium absorption; associated with increased fracture risk with long-term use.", management:"Switch to calcium citrate (acid-independent). Ensure adequate vitamin D. Monitor bone density in long-term users.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Omeprazole / PPIs", drug_aliases:["omeprazole","esomeprazole","pantoprazole","lansoprazole","rabeprazole","nexium","prilosec","protonix","prevacid","ppi"], nutrient:"Iron", nutrient_aliases:["iron","fe","ferrous sulfate","ferric"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Gastric acid converts dietary ferric (Fe3+) to ferrous (Fe2+) iron, which is better absorbed. PPIs impair this reduction step.", effect:"Reduced non-heme iron absorption; may cause or worsen iron deficiency anemia.", management:"Monitor iron status (ferritin, CBC) in long-term PPI users. Use ferrous supplement forms.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Omeprazole / PPIs", drug_aliases:["omeprazole","esomeprazole","pantoprazole","lansoprazole","rabeprazole","nexium","prilosec","protonix","prevacid","ppi"], nutrient:"Zinc", nutrient_aliases:["zinc","zn","zinc picolinate","zinc gluconate","zinc sulfate"], severity:"minor", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Reduced gastric acid may impair ionization and absorption of dietary zinc.", effect:"Mild zinc depletion with long-term use; may contribute to immune dysfunction, taste disturbance.", management:"Monitor zinc in long-term PPI users. Consider supplementation if deficient.", evidence:"possible", onset:"chronic", timing_note:null },
+  { drug:"Statins", drug_aliases:["atorvastatin","simvastatin","rosuvastatin","lovastatin","pravastatin","fluvastatin","pitavastatin","lipitor","zocor","crestor","mevacor"], nutrient:"Coenzyme Q10", nutrient_aliases:["coq10","ubiquinol","ubiquinone","q10"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"HMG-CoA reductase inhibition blocks the mevalonate pathway, which is required for synthesis of both cholesterol AND CoQ10 (ubiquinone). All statins deplete endogenous CoQ10.", effect:"Reduced CoQ10 in plasma and muscle; may contribute to statin-induced myopathy, fatigue, and muscle weakness.", management:"Consider CoQ10 supplementation (100–200mg/day) in patients with statin-related myalgia or fatigue. Evidence for routine supplementation is mixed but low risk.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Statins", drug_aliases:["atorvastatin","simvastatin","rosuvastatin","lovastatin","pravastatin","lipitor","zocor","crestor"], nutrient:"Grapefruit", nutrient_aliases:["grapefruit","grapefruit juice","pomelo","seville orange"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"Grapefruit furanocoumarins irreversibly inhibit intestinal CYP3A4, dramatically increasing bioavailability of simvastatin/lovastatin (up to 13-fold), and moderately atorvastatin. Rosuvastatin and pravastatin largely unaffected.", effect:"Markedly elevated statin plasma levels; greatly increased risk of myopathy and rhabdomyolysis.", management:"AVOID grapefruit with simvastatin and lovastatin. Limit with atorvastatin. Switch to rosuvastatin/pravastatin if grapefruit cannot be avoided. Effect lasts 24–72 hours.", evidence:"established", onset:"acute", timing_note:"Effect persists 24–72 hours after grapefruit consumption" },
+  { drug:"Statins", drug_aliases:["atorvastatin","simvastatin","rosuvastatin","lovastatin","pravastatin","lipitor","zocor","crestor"], nutrient:"Red Yeast Rice", nutrient_aliases:["red yeast rice","monascus purpureus"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Red yeast rice contains monacolin K (chemically identical to lovastatin). Additive HMG-CoA inhibition and CoQ10 depletion.", effect:"Additive myopathy, rhabdomyolysis, and liver toxicity.", management:"AVOID red yeast rice with statin therapy. Counsel patients taking it as a 'natural' alternative.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Statins", drug_aliases:["atorvastatin","simvastatin","rosuvastatin","lovastatin","pravastatin","lipitor","zocor","crestor"], nutrient:"Niacin (high dose)", nutrient_aliases:["niacin","nicotinic acid","b3","vitamin b3","niaspan"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Mechanism unclear; possibly impaired CoQ10 availability or direct myotoxic interaction.", effect:"Increased risk of myopathy and rhabdomyolysis with high-dose niacin (>1g/day) combined with statins.", management:"Avoid high-dose niacin with statins unless under specialist supervision. Monitor CK and symptoms.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"ACE Inhibitors", drug_aliases:["lisinopril","enalapril","ramipril","perindopril","captopril","benazepril","quinapril","trandolapril","zestril","vasotec","altace"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"ACE inhibitors chelate zinc (ACE is a zinc-metalloprotease) and increase urinary zinc excretion.", effect:"Zinc depletion with long-term use; may contribute to taste disturbances (dysgeusia), immune dysfunction.", management:"Monitor zinc in long-term users, especially those with taste disturbance. Supplement if deficient.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"ACE Inhibitors", drug_aliases:["lisinopril","enalapril","ramipril","perindopril","captopril","benazepril","zestril","vasotec","altace"], nutrient:"Potassium", nutrient_aliases:["potassium","k","potassium chloride","potassium supplement","no salt","nu-salt"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"ACE inhibitors reduce aldosterone, decreasing renal potassium excretion. Potassium supplements push serum K+ dangerously higher.", effect:"Hyperkalemia — cardiac arrhythmias, potentially fatal.", management:"AVOID potassium supplements and potassium-containing salt substitutes unless specifically prescribed and monitored.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Furosemide / Loop Diuretics", drug_aliases:["furosemide","bumetanide","torsemide","ethacrynic acid","lasix"], nutrient:"Potassium", nutrient_aliases:["potassium","k"], severity:"major", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Inhibition of Na-K-2Cl cotransporter (NKCC2) in the thick ascending limb of Henle causes obligatory potassium wasting.", effect:"Hypokalemia; risk of cardiac arrhythmias (especially with digoxin), muscle weakness, metabolic alkalosis.", management:"Monitor serum potassium frequently. Increase dietary potassium or prescribe potassium supplementation. Consider potassium-sparing diuretic.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Furosemide / Loop Diuretics", drug_aliases:["furosemide","bumetanide","torsemide","lasix"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Loop diuretics inhibit magnesium reabsorption in the loop of Henle, causing urinary magnesium wasting.", effect:"Hypomagnesemia; can cause refractory hypokalemia (must correct Mg first), muscle cramps, cardiac arrhythmias.", management:"Monitor serum magnesium. Supplement magnesium. Note: hypokalemia may be refractory until magnesium deficiency is corrected.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Furosemide / Loop Diuretics", drug_aliases:["furosemide","bumetanide","torsemide","lasix"], nutrient:"Thiamine (B1)", nutrient_aliases:["thiamine","thiamin","b1","vitamin b1"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Furosemide inhibits thiamine renal tubular reabsorption and intestinal transport. Particularly significant in heart failure patients.", effect:"Thiamine deficiency (beriberi); can paradoxically worsen cardiac function in heart failure — the very condition furosemide is treating.", management:"Supplement thiamine (100mg/day) in heart failure patients on chronic furosemide. Screen for deficiency in unexplained worsening HF.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Furosemide / Loop Diuretics", drug_aliases:["furosemide","bumetanide","torsemide","lasix"], nutrient:"Calcium", nutrient_aliases:["calcium","ca"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Loop diuretics increase urinary calcium excretion (unlike thiazides which retain calcium).", effect:"Hypocalcemia; contributes to osteoporosis with long-term use.", management:"Monitor calcium and bone density in long-term users. Supplement calcium and vitamin D.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Furosemide / Loop Diuretics", drug_aliases:["furosemide","bumetanide","torsemide","lasix"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"minor", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Increased urinary zinc excretion with loop diuretic use.", effect:"Zinc deficiency with long-term use; impaired immune function, wound healing, taste.", management:"Monitor zinc in long-term users. Consider supplementation.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Thiazide Diuretics", drug_aliases:["hydrochlorothiazide","chlorthalidone","indapamide","hctz","microzide","thalitone"], nutrient:"Potassium", nutrient_aliases:["potassium","k"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Thiazides inhibit Na-Cl cotransporter in distal convoluted tubule, increasing Na+ delivery and secondarily increasing K+ secretion.", effect:"Hypokalemia; arrhythmia risk, muscle weakness.", management:"Monitor potassium. Dietary or supplemental potassium as directed by physician.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Thiazide Diuretics", drug_aliases:["hydrochlorothiazide","chlorthalidone","indapamide","hctz"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Increased renal magnesium excretion with thiazide use.", effect:"Hypomagnesemia; can potentiate hypokalemia.", management:"Monitor magnesium. Supplement if deficient.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Thiazide Diuretics", drug_aliases:["hydrochlorothiazide","chlorthalidone","indapamide","hctz"], nutrient:"Calcium", nutrient_aliases:["calcium","ca"], severity:"informational", direction:"drug_affects_nutrient", type:"retention", mechanism:"Unlike loop diuretics, thiazides INCREASE calcium reabsorption in the distal tubule — used therapeutically for calcium kidney stones.", effect:"Hypercalcemia risk if combined with calcium supplementation or vitamin D. Milk-alkali syndrome risk.", management:"AVOID excess calcium supplementation. Monitor serum calcium. This is also a THERAPEUTIC effect used in kidney stone prevention.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Thiazide Diuretics", drug_aliases:["hydrochlorothiazide","chlorthalidone","indapamide","hctz"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"minor", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Increased urinary zinc excretion.", effect:"Mild zinc depletion.", management:"Monitor zinc in long-term users.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Corticosteroids", drug_aliases:["prednisone","prednisolone","dexamethasone","methylprednisolone","budesonide","cortisone","hydrocortisone","medrol","deltasone"], nutrient:"Calcium", nutrient_aliases:["calcium","ca"], severity:"major", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Corticosteroids reduce intestinal calcium absorption (opposing vitamin D), increase renal calcium excretion, and directly suppress osteoblast activity.", effect:"Leading cause of drug-induced osteoporosis. 10–20% of chronic steroid users develop fractures.", management:"Supplement calcium (1000–1500mg/day) and vitamin D (800–2000 IU/day) in all chronic steroid users. Consider bisphosphonate for >3 months use. Monitor bone density.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Corticosteroids", drug_aliases:["prednisone","prednisolone","dexamethasone","methylprednisolone","medrol","deltasone"], nutrient:"Vitamin D", nutrient_aliases:["vitamin d","vit d","cholecalciferol","d3","ergocalciferol","d2","calciferol"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Corticosteroids reduce conversion of 25-OH vitamin D to active 1,25(OH)2D3, decrease intestinal vitamin D receptor expression, and increase vitamin D catabolism.", effect:"Functional vitamin D deficiency contributing to reduced calcium absorption and bone loss.", management:"Supplement vitamin D (800–2000+ IU/day to maintain 25-OH D >30 ng/mL) in all patients on chronic corticosteroids.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Corticosteroids", drug_aliases:["prednisone","prednisolone","dexamethasone","methylprednisolone"], nutrient:"Potassium", nutrient_aliases:["potassium","k"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Mineralocorticoid activity of corticosteroids promotes sodium retention and potassium excretion in the kidney collecting duct.", effect:"Hypokalemia; muscle weakness, cardiac arrhythmias.", management:"Monitor serum potassium. Increase dietary potassium. Supplement if needed.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Corticosteroids", drug_aliases:["prednisone","prednisolone","dexamethasone","methylprednisolone"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"minor", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Corticosteroids increase urinary zinc excretion and may impair zinc-dependent immune functions.", effect:"Zinc depletion contributing to impaired immunity and wound healing.", management:"Consider zinc supplementation in chronic steroid users, especially those with poor healing.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Tetracyclines", drug_aliases:["doxycycline","tetracycline","minocycline","vibramycin","oracea"], nutrient:"Calcium", nutrient_aliases:["calcium","ca","dairy","milk"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Calcium ions chelate tetracyclines in the GI tract, forming poorly soluble complexes that cannot be absorbed.", effect:"Antibiotic absorption reduced by 50–80%. Subtherapeutic levels; treatment failure.", management:"Take tetracyclines at least 1–2 hours BEFORE or 4 hours AFTER dairy products, calcium supplements, or antacids.", evidence:"established", onset:"acute", timing_note:"Separate by 1–2 hours before or 4 hours after calcium" },
+  { drug:"Tetracyclines", drug_aliases:["doxycycline","tetracycline","minocycline","vibramycin"], nutrient:"Iron", nutrient_aliases:["iron","fe","ferrous sulfate"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Iron chelates tetracyclines, forming insoluble iron-tetracycline complexes. Both antibiotic and iron absorption are impaired.", effect:"Antibiotic absorption reduced 50–80%; iron absorption also reduced.", management:"Separate iron supplements and tetracyclines by at least 2–3 hours.", evidence:"established", onset:"acute", timing_note:"Separate by 2–3 hours" },
+  { drug:"Tetracyclines", drug_aliases:["doxycycline","tetracycline","minocycline","vibramycin"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Magnesium chelates tetracyclines (present in antacids, supplements), reducing antibiotic absorption.", effect:"Reduced antibiotic absorption and efficacy.", management:"Separate magnesium-containing products and tetracyclines by at least 2 hours.", evidence:"established", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Tetracyclines", drug_aliases:["doxycycline","tetracycline","minocycline","vibramycin"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Zinc chelates tetracyclines, reducing doxycycline absorption by approximately 30–40%.", effect:"Reduced antibiotic bioavailability.", management:"Separate zinc supplements and tetracyclines by 2–3 hours.", evidence:"established", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Tetracyclines", drug_aliases:["doxycycline","tetracycline","minocycline","vibramycin"], nutrient:"Vitamin A", nutrient_aliases:["vitamin a","retinol","retinyl palmitate","vit a","preformed vitamin a"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Both high-dose vitamin A and tetracyclines independently increase intracranial pressure. The combination is additive.", effect:"Pseudotumor cerebri (benign intracranial hypertension) — severe headache, visual changes, papilledema.", management:"CONTRAINDICATED: avoid high-dose vitamin A supplements with tetracycline antibiotics.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Fluoroquinolones", drug_aliases:["ciprofloxacin","levofloxacin","moxifloxacin","cipro","levaquin","avelox"], nutrient:"Calcium", nutrient_aliases:["calcium","ca","dairy"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Calcium forms chelate complexes with fluoroquinolones at the 4-oxo and 3-carboxyl groups, dramatically reducing antibiotic absorption.", effect:"Fluoroquinolone absorption reduced up to 50–70%; treatment failure risk.", management:"Take fluoroquinolone 2 hours BEFORE or 6 hours AFTER calcium. Avoid dairy, antacids, and calcium supplements within this window.", evidence:"established", onset:"acute", timing_note:"Take fluoroquinolone 2 hours before or 6 hours after calcium" },
+  { drug:"Fluoroquinolones", drug_aliases:["ciprofloxacin","levofloxacin","moxifloxacin","cipro","levaquin","avelox"], nutrient:"Iron", nutrient_aliases:["iron","fe","ferrous sulfate"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Iron chelates fluoroquinolones, significantly reducing antibiotic absorption.", effect:"Fluoroquinolone absorption reduced 30–70%.", management:"Take fluoroquinolone 2 hours before or 6 hours after iron supplements.", evidence:"established", onset:"acute", timing_note:"2 hours before or 6 hours after iron" },
+  { drug:"Fluoroquinolones", drug_aliases:["ciprofloxacin","levofloxacin","moxifloxacin","cipro","levaquin","avelox"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Magnesium (in antacids and supplements) chelates fluoroquinolones, reducing absorption.", effect:"Significantly reduced antibiotic bioavailability.", management:"Take fluoroquinolone 2 hours before or 6 hours after magnesium-containing products.", evidence:"established", onset:"acute", timing_note:"2 hours before or 6 hours after magnesium" },
+  { drug:"Fluoroquinolones", drug_aliases:["ciprofloxacin","levofloxacin","moxifloxacin","cipro","levaquin","avelox"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Zinc chelates fluoroquinolones, reducing absorption.", effect:"Reduced fluoroquinolone bioavailability.", management:"Separate zinc supplements by 2 hours before or 4–6 hours after fluoroquinolone.", evidence:"established", onset:"acute", timing_note:"Separate by 2–4 hours" },
+  { drug:"Methotrexate", drug_aliases:["mtx","methotrexate","trexall","rheumatrex","otrexup"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9","vitamin b9","5-mthf","methylfolate","l-methylfolate"], severity:"major", direction:"drug_affects_nutrient", type:"pharmacodynamic", mechanism:"Methotrexate competitively inhibits dihydrofolate reductase (DHFR), blocking conversion of folate to its active tetrahydrofolate form.", effect:"Megaloblastic anemia, mucositis, GI toxicity, hepatotoxicity. Severe at cancer doses; clinically meaningful at low rheumatologic doses.", management:"Routine folate supplementation (1–5mg/day, or 5–15mg/week on non-MTX days) is STANDARD OF CARE. Does not significantly reduce anti-inflammatory efficacy.", evidence:"established", onset:"chronic", timing_note:"Take folate on non-methotrexate days (or daily except day of MTX)" },
+  { drug:"Phenytoin", drug_aliases:["phenytoin","dilantin","fosphenytoin","diphenylhydantoin"], nutrient:"Vitamin D", nutrient_aliases:["vitamin d","vit d","cholecalciferol","d3","ergocalciferol"], severity:"major", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Phenytoin induces CYP24A1, the enzyme that catabolizes 25-hydroxyvitamin D and 1,25-dihydroxyvitamin D, accelerating vitamin D degradation.", effect:"Vitamin D deficiency, hypocalcemia, osteomalacia, osteoporosis proportional to duration and dose.", management:"Supplement vitamin D (800–4000 IU/day based on levels). Monitor 25-OH vitamin D and calcium. Consider bone density monitoring.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Phenytoin", drug_aliases:["phenytoin","dilantin","fosphenytoin"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"major", direction:"bidirectional", type:"bidirectional", mechanism:"Phenytoin reduces folate absorption and catabolism. CONVERSELY, high-dose folate supplementation induces phenytoin metabolism, reducing drug levels — risk of seizure breakthrough.", effect:"Phenytoin causes megaloblastic anemia. High-dose folate can precipitate seizure breakthrough by lowering phenytoin levels.", management:"Use LOW-DOSE folate (400–800 mcg/day) — enough to prevent deficiency without inducing phenytoin metabolism. Monitor drug levels and seizure frequency.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Phenytoin", drug_aliases:["phenytoin","dilantin","fosphenytoin"], nutrient:"Biotin", nutrient_aliases:["biotin","b7","vitamin b7","vitamin h"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Phenytoin competitively inhibits biotinidase (the enzyme that recycles biotin) and may inhibit intestinal biotin absorption.", effect:"Biotin deficiency — hair loss, skin rash, neurological symptoms.", management:"Supplement biotin (2–5mg/day) in patients on long-term phenytoin therapy.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Carbamazepine", drug_aliases:["carbamazepine","tegretol","carbatrol","epitol"], nutrient:"Vitamin D", nutrient_aliases:["vitamin d","vit d","cholecalciferol","d3"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Like phenytoin, carbamazepine induces CYP enzymes including CYP24A1, accelerating vitamin D catabolism.", effect:"Vitamin D deficiency and osteomalacia with long-term use.", management:"Supplement vitamin D; monitor levels. Assess bone density in long-term users.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Carbamazepine", drug_aliases:["carbamazepine","tegretol","carbatrol"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"CYP enzyme induction increases folate catabolism.", effect:"Megaloblastic anemia; increased neural tube defect risk in pregnancy.", management:"Supplement folate (400–800 mcg/day; higher in pregnancy). Monitor folate and CBC.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Valproic Acid", drug_aliases:["valproate","valproic acid","depakote","depakene","divalproex","vpa"], nutrient:"Carnitine", nutrient_aliases:["carnitine","l-carnitine","acetyl-l-carnitine","acetyl carnitine"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Valproate impairs carnitine biosynthesis and increases urinary carnitine excretion via acylcarnitine formation.", effect:"Carnitine deficiency (especially in children); may contribute to VPA-induced hepatotoxicity and hyperammonemia.", management:"Consider carnitine supplementation (50–100mg/kg/day) in children on VPA, especially those with poor nutrition or hepatic concerns.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Valproic Acid", drug_aliases:["valproate","valproic acid","depakote","depakene","vpa"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"moderate", direction:"drug_affects_nutrient", type:"pharmacodynamic", mechanism:"Valproate is a folate antagonist. Particularly important in pregnancy due to neural tube defect risk.", effect:"Folate deficiency; high-dose VPA in pregnancy associated with neural tube defects.", management:"High-dose folate supplementation (4–5mg/day) in women of childbearing potential on VPA. Routine folate for all VPA patients.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Isoniazid", drug_aliases:["isoniazid","inh","nydrazid","rifater"], nutrient:"Vitamin B6", nutrient_aliases:["vitamin b6","pyridoxine","pyridoxal","b6","p5p","pyridoxal-5-phosphate"], severity:"major", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Isoniazid is a structural pyridoxine analog. It inhibits pyridoxal kinase (preventing B6 activation) and forms hydrazones with pyridoxal that are renally excreted, depleting total body B6.", effect:"Peripheral neuropathy (dose-dependent) — the most common serious side effect of INH. Sensory > motor involvement.", management:"B6 supplementation (25–50mg/day) is STANDARD OF CARE with INH therapy. Higher doses (100mg/day) for high-risk patients: elderly, diabetics, alcoholics, malnourished, pregnant.", evidence:"established", onset:"chronic", timing_note:"Start B6 concurrently with INH initiation" },
+  { drug:"Isoniazid", drug_aliases:["isoniazid","inh","nydrazid"], nutrient:"Niacin (B3)", nutrient_aliases:["niacin","nicotinic acid","nicotinamide","b3","vitamin b3"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Isoniazid interferes with tryptophan-to-niacin conversion via the kynurenine pathway and may directly impair niacin utilization.", effect:"Pellagra (niacin deficiency) — dermatitis, diarrhea, dementia. Rare but reported.", management:"Supplement niacin if signs of pellagra develop. B6 supplementation also helps (required for tryptophan→niacin conversion).", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Oral Contraceptives", drug_aliases:["birth control pill","ocp","combined oral contraceptive","estrogen","ethinyl estradiol","yasmin","yaz","lo loestrin","ortho tri-cyclen"], nutrient:"Vitamin B6", nutrient_aliases:["vitamin b6","pyridoxine","b6","p5p"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Estrogen upregulates tryptophan metabolism via the kynurenine pathway, diverting B6 away from other metabolic functions.", effect:"B6 depletion; may contribute to depression, mood changes, and impaired serotonin metabolism in OCP users.", management:"Consider B6 supplementation (10–25mg/day) in OCP users experiencing mood changes or depression.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Oral Contraceptives", drug_aliases:["birth control pill","ocp","combined oral contraceptive","ethinyl estradiol","yasmin","yaz"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9","methylfolate"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Estrogen may impair folate transport and increase folate catabolism.", effect:"Mild folate depletion; increased neural tube defect risk in pregnancies conceived shortly after stopping OCP.", management:"Take prenatal vitamins (with folate) for at least 1–3 months before trying to conceive after stopping OCP.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Oral Contraceptives", drug_aliases:["birth control pill","ocp","combined oral contraceptive","ethinyl estradiol","yasmin"], nutrient:"St. John's Wort", nutrient_aliases:["st. john's wort","st johns wort","hypericum","sjw"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"St. John's Wort induces CYP3A4 and P-glycoprotein, significantly reducing oral contraceptive plasma levels.", effect:"Contraceptive failure; unintended pregnancy. Well-documented and clinically significant.", management:"CONTRAINDICATED. Use alternative or additional contraception if patient uses St. John's Wort.", evidence:"established", onset:"chronic", timing_note:"Effect builds over 2–4 weeks of St. John's Wort use" },
+  { drug:"Oral Contraceptives", drug_aliases:["birth control pill","ocp","ethinyl estradiol"], nutrient:"Vitamin C", nutrient_aliases:["vitamin c","ascorbic acid","ascorbate","vit c"], severity:"minor", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"High-dose vitamin C (>1g/day) may increase bioavailability of ethinyl estradiol by competing for sulfation in the gut wall.", effect:"Slightly elevated estrogen levels; potential increase in estrogen-related side effects.", management:"Avoid very high-dose vitamin C (>1g) with OCP. Standard dietary vitamin C is not a concern.", evidence:"possible", onset:"acute", timing_note:null },
+  { drug:"Digoxin", drug_aliases:["digoxin","lanoxin","digitalis","cardiac glycoside"], nutrient:"Potassium", nutrient_aliases:["potassium","k"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Digoxin and potassium compete for the same binding site on Na/K-ATPase. Hypokalemia dramatically increases digoxin's inhibitory effect and toxicity.", effect:"Digoxin toxicity at normal plasma levels: nausea, vomiting, visual disturbances (yellow-green halos), bradyarrhythmias, heart block.", management:"CRITICAL: Maintain serum potassium 4.0–5.0 mEq/L in patients on digoxin. Hypokalemia from diuretics is a major trigger of digoxin toxicity.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Digoxin", drug_aliases:["digoxin","lanoxin","digitalis"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Hypomagnesemia downregulates Na/K-ATPase, similarly to hypokalemia, increasing digoxin sensitivity and toxicity risk.", effect:"Digoxin toxicity even at normal plasma concentrations.", management:"Maintain normal magnesium levels. Correct deficiency (common with diuretics) before adjusting digoxin dose.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Digoxin", drug_aliases:["digoxin","lanoxin","digitalis"], nutrient:"St. John's Wort", nutrient_aliases:["st. john's wort","st johns wort","hypericum","sjw"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"St. John's Wort induces P-glycoprotein (P-gp), the major transporter for digoxin absorption and renal elimination.", effect:"Digoxin plasma levels reduced by 25–40%; risk of subtherapeutic cardiac control, arrhythmias.", management:"AVOID combination. If unavoidable, monitor digoxin levels closely and expect significant dose adjustments.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Lithium", drug_aliases:["lithium carbonate","lithium citrate","eskalith","lithobid"], nutrient:"Sodium", nutrient_aliases:["sodium","salt","nacl","table salt"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"Lithium and sodium are handled similarly by renal proximal tubular cells. Sodium depletion triggers compensatory lithium reabsorption, elevating plasma lithium to potentially toxic levels.", effect:"Lithium toxicity: tremor, confusion, ataxia, polyuria, cardiac arrhythmias — potentially fatal.", management:"CRITICAL: Maintain stable sodium intake. Avoid low-sodium diets, excessive sweating, vomiting, diarrhea, or diuretics without lithium level monitoring.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Levodopa", drug_aliases:["levodopa","l-dopa","sinemet","carbidopa-levodopa","stalevo","madopar"], nutrient:"Vitamin B6", nutrient_aliases:["vitamin b6","pyridoxine","b6","p5p"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"B6 is the cofactor for DOPA decarboxylase, converting levodopa to dopamine peripherally. Without carbidopa, high B6 dramatically increases peripheral conversion, preventing brain delivery.", effect:"With levodopa ALONE: B6 supplements dramatically reduce efficacy. With carbidopa/levodopa (Sinemet): largely negated by carbidopa.", management:"AVOID B6 supplements with levodopa monotherapy. Standard B6 is safe with carbidopa/levodopa (Sinemet) combination.", evidence:"established", onset:"acute", timing_note:"Only clinically significant without carbidopa" },
+  { drug:"Levodopa", drug_aliases:["levodopa","l-dopa","sinemet","carbidopa-levodopa","stalevo"], nutrient:"Iron", nutrient_aliases:["iron","fe","ferrous sulfate"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Iron chelates levodopa in the GI tract, reducing levodopa absorption by up to 50%.", effect:"Reduced levodopa bioavailability; worsening Parkinson's motor control.", management:"Separate levodopa and iron by at least 2 hours.", evidence:"established", onset:"acute", timing_note:"Separate by at least 2 hours" },
+  { drug:"Spironolactone", drug_aliases:["spironolactone","aldactone","potassium-sparing diuretic"], nutrient:"Potassium", nutrient_aliases:["potassium","k","potassium supplement"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Spironolactone is an aldosterone antagonist that causes potassium retention. Supplemental potassium further elevates serum K+.", effect:"Dangerous hyperkalemia — cardiac arrest risk.", management:"AVOID potassium supplements and potassium-containing salt substitutes. Monitor serum potassium regularly.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Cholestyramine / Bile Acid Sequestrants", drug_aliases:["cholestyramine","colestipol","colesevelam","questran","colestid","welchol"], nutrient:"Fat-Soluble Vitamins (A, D, E, K)", nutrient_aliases:["vitamin a","vitamin d","vitamin e","vitamin k","fat soluble vitamins","retinol","cholecalciferol","tocopherol","phylloquinone"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Cholestyramine binds bile acids. Without bile acids, fat-soluble vitamin micelle formation and absorption is significantly impaired.", effect:"Deficiency of vitamins A, D, E, and K with chronic use. Vitamin K deficiency can cause bleeding.", management:"Supplement fat-soluble vitamins, taken 1 hour BEFORE or 4–6 hours AFTER cholestyramine. Monitor levels.", evidence:"established", onset:"chronic", timing_note:"Take vitamins 1 hour before or 4–6 hours after cholestyramine" },
+  { drug:"Cholestyramine / Bile Acid Sequestrants", drug_aliases:["cholestyramine","colestipol","colesevelam","questran"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Cholestyramine may bind folate in the gut, reducing its absorption.", effect:"Folate deficiency with chronic use.", management:"Supplement folate. Take supplement well before or after cholestyramine.", evidence:"probable", onset:"chronic", timing_note:"Take folate 1 hour before or 4–6 hours after" },
+  { drug:"Trimethoprim / TMP-SMX", drug_aliases:["trimethoprim","tmp-smx","bactrim","septrin","co-trimoxazole","sulfamethoxazole-trimethoprim"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"moderate", direction:"drug_affects_nutrient", type:"pharmacodynamic", mechanism:"Trimethoprim inhibits human dihydrofolate reductase (DHFR), causing functionally significant folate deficiency with prolonged use.", effect:"Megaloblastic changes, anemia, and leukopenia with prolonged use, especially in elderly or folate-depleted patients.", management:"Supplement with folinic acid (not folic acid, which requires DHFR activation) if prolonged use. Screen for folate status.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Trimethoprim / TMP-SMX", drug_aliases:["trimethoprim","tmp-smx","bactrim","septrin"], nutrient:"Potassium", nutrient_aliases:["potassium","k"], severity:"moderate", direction:"drug_affects_nutrient", type:"retention", mechanism:"Trimethoprim blocks epithelial sodium channels (ENaC) in renal collecting duct (same mechanism as amiloride), causing potassium retention.", effect:"Hyperkalemia — particularly risky in elderly, renal impairment, or patients on other potassium-raising drugs.", management:"Monitor potassium during TMP-SMX course, especially in high-risk patients. Avoid potassium supplements during treatment.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"SSRIs", drug_aliases:["fluoxetine","sertraline","paroxetine","citalopram","escitalopram","prozac","zoloft","paxil","celexa","lexapro"], nutrient:"St. John's Wort", nutrient_aliases:["st. john's wort","st johns wort","hypericum","sjw"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"St. John's Wort (hypericin, hyperforin) inhibits serotonin reuptake independently of SSRIs. Combined serotonergic activity leads to serotonin syndrome.", effect:"Serotonin syndrome: agitation, confusion, rapid heart rate, high blood pressure, dilated pupils, muscle twitching/rigidity — potentially life-threatening.", management:"CONTRAINDICATED. Never combine SSRIs with St. John's Wort. Allow adequate washout period when switching.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"SSRIs", drug_aliases:["fluoxetine","sertraline","paroxetine","citalopram","escitalopram","prozac","zoloft","paxil","celexa","lexapro"], nutrient:"5-HTP", nutrient_aliases:["5-htp","5-hydroxytryptophan","5 htp"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"5-HTP is the immediate precursor to serotonin. Combined with SSRIs (which block reuptake), it causes excessive synaptic serotonin accumulation.", effect:"Serotonin syndrome risk.", management:"AVOID 5-HTP with SSRIs. If serotonin augmentation is needed, do so under specialist supervision.", evidence:"probable", onset:"acute", timing_note:null },
+  { drug:"Bisphosphonates", drug_aliases:["alendronate","risedronate","ibandronate","zoledronic acid","fosamax","actonel","boniva"], nutrient:"Calcium", nutrient_aliases:["calcium","ca","dairy"], severity:"major", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Calcium and polyvalent cations form insoluble complexes with bisphosphonates, eliminating their already-poor oral bioavailability (<1%).", effect:"Near-complete loss of bisphosphonate absorption; no therapeutic effect.", management:"Take bisphosphonates with PLAIN WATER ONLY, on an EMPTY STOMACH in the morning. Wait at least 30 minutes before eating or taking any supplements. Stay upright.", evidence:"established", onset:"acute", timing_note:"Take on empty stomach, wait 30–60 min before calcium" },
+  { drug:"Bisphosphonates", drug_aliases:["alendronate","risedronate","ibandronate","fosamax","actonel"], nutrient:"Vitamin D", nutrient_aliases:["vitamin d","vit d","cholecalciferol","d3"], severity:"informational", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Vitamin D deficiency at baseline increases risk of hypocalcemia when bisphosphonate suppresses bone resorption.", effect:"Hypocalcemia if vitamin D deficient when starting bisphosphonates.", management:"ALWAYS correct vitamin D deficiency BEFORE starting bisphosphonate therapy. Maintain supplementation throughout treatment.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Cyclosporine", drug_aliases:["cyclosporine","ciclosporin","sandimmune","neoral","gengraf"], nutrient:"St. John's Wort", nutrient_aliases:["st. john's wort","st johns wort","hypericum","sjw"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"St. John's Wort powerfully induces CYP3A4 and P-glycoprotein, responsible for cyclosporine metabolism and efflux.", effect:"Cyclosporine levels reduced by 50–60%; acute transplant rejection and graft loss.", management:"ABSOLUTELY CONTRAINDICATED in transplant patients. This combination has caused documented organ rejection.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Cyclosporine", drug_aliases:["cyclosporine","ciclosporin","sandimmune","neoral","gengraf"], nutrient:"Grapefruit", nutrient_aliases:["grapefruit","grapefruit juice","pomelo"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"Grapefruit furanocoumarins inhibit intestinal CYP3A4, increasing cyclosporine bioavailability unpredictably.", effect:"Markedly elevated cyclosporine levels; nephrotoxicity and other toxicities.", management:"Avoid grapefruit in transplant patients on cyclosporine.", evidence:"established", onset:"acute", timing_note:null },
+  { drug:"Cyclosporine", drug_aliases:["cyclosporine","ciclosporin","sandimmune","neoral","gengraf"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Cyclosporine causes renal tubular magnesium wasting.", effect:"Hypomagnesemia in 30–50% of transplant patients on cyclosporine.", management:"Monitor and supplement magnesium in all patients on cyclosporine.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Penicillamine", drug_aliases:["penicillamine","cuprimine","depen"], nutrient:"Vitamin B6", nutrient_aliases:["vitamin b6","pyridoxine","b6","p5p"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Penicillamine forms a complex with pyridoxal (the aldehyde form of B6), creating a Schiff base that is renally excreted, depleting body B6 stores.", effect:"Peripheral neuropathy (B6 deficiency); may also cause optic neuritis.", management:"Supplement B6 (25–50mg/day) in all patients on penicillamine therapy.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Penicillamine", drug_aliases:["penicillamine","cuprimine","depen"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"moderate", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Zinc chelates penicillamine in the GI tract, reducing drug absorption.", effect:"Reduced penicillamine bioavailability; reduced therapeutic effect.", management:"Separate zinc supplements from penicillamine by at least 2 hours.", evidence:"probable", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Antacids", drug_aliases:["aluminum hydroxide","magnesium hydroxide","calcium carbonate","tums","maalox","mylanta","gaviscon","rolaids"], nutrient:"Phosphorus", nutrient_aliases:["phosphorus","phosphate"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Aluminum-containing antacids bind dietary phosphate in the GI tract, forming insoluble aluminum phosphate excreted in feces.", effect:"Phosphate depletion with chronic use: osteomalacia, muscle weakness, hypophosphatemia.", management:"Avoid long-term antacid use. If unavoidable, monitor phosphate and use lowest effective dose.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Antacids", drug_aliases:["aluminum hydroxide","magnesium hydroxide","calcium carbonate","tums","maalox","mylanta"], nutrient:"Iron", nutrient_aliases:["iron","fe"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Alkaline pH from antacids impairs ferrous iron stability and absorption.", effect:"Reduced iron absorption; iron deficiency with chronic use.", management:"Separate antacids and iron supplements by at least 2 hours.", evidence:"established", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Grapefruit", drug_aliases:["grapefruit","grapefruit juice","pomelo","seville orange","bergamot"], nutrient:"CYP3A4-metabolized drugs", nutrient_aliases:["drug interaction","cyp3a4","calcium channel blockers","felodipine","nifedipine","midazolam","buspirone","amiodarone"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"Grapefruit furanocoumarins (bergamottin, DHB) IRREVERSIBLY inhibit intestinal CYP3A4. Affected drugs have dramatically increased bioavailability. One glass affects levels for 24–72 hours.", effect:"Elevated plasma levels of: calcium channel blockers (felodipine ×6), statins (simvastatin ×13, lovastatin, atorvastatin), immunosuppressants (cyclosporine, tacrolimus), benzodiazepines (midazolam, triazolam), buspirone, amiodarone, and many others.", management:"Check CYP3A4 interaction for any medication. Avoid grapefruit with affected drugs. Effect lasts 24–72 hours per serving.", evidence:"established", onset:"acute", timing_note:"Effect lasts 24–72 hours — not just immediate timing" },
+  { drug:"St. John's Wort", drug_aliases:["st. john's wort","st johns wort","hypericum perforatum","hypericum","sjw"], nutrient:"CYP3A4/2C9/P-gp substrates", nutrient_aliases:["warfarin","oral contraceptives","cyclosporine","digoxin","ssri","antiretrovirals","imatinib"], severity:"major", direction:"nutrient_affects_drug", type:"pharmacokinetic", mechanism:"Hyperforin is a powerful inducer of CYP3A4, CYP2C9, and P-glycoprotein. This significantly increases clearance of many drugs, reducing therapeutic plasma levels.", effect:"Reduced efficacy of: warfarin, oral contraceptives, HIV antiretrovirals, cyclosporine, digoxin, SSRIs (+ serotonin syndrome risk), imatinib, irinotecan, and many others.", management:"Screen ALL patients for St. John's Wort use. Avoid with any narrow-therapeutic-index drugs metabolized by CYP3A4/2C9 or transported by P-gp. Stopping abruptly can cause rebound toxicity.", evidence:"established", onset:"chronic", timing_note:"Effect builds over 2–4 weeks; stopping also causes rebound drug level increases" },
+  { drug:"Iron Supplements", drug_aliases:["iron","ferrous sulfate","ferrous gluconate","ferrous fumarate","ferric","iron bisglycinate","fe","iron supplement"], nutrient:"Vitamin C", nutrient_aliases:["vitamin c","ascorbic acid","ascorbate","vit c"], severity:"informational", direction:"bidirectional", type:"enhancement", mechanism:"Vitamin C (ascorbic acid) reduces ferric iron (Fe3+) to the better-absorbed ferrous form (Fe2+), and chelates iron in a soluble complex that resists precipitation at intestinal pH.", effect:"Vitamin C significantly enhances non-heme iron absorption (can increase by 3–6 fold).", management:"BENEFICIAL: Take iron supplements with 200–500mg vitamin C to maximize absorption. Especially useful when treating iron deficiency.", evidence:"established", onset:"acute", timing_note:"Take vitamin C simultaneously with iron for best effect" },
+  { drug:"Iron Supplements", drug_aliases:["iron","ferrous sulfate","ferrous gluconate","fe","iron supplement"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"minor", direction:"bidirectional", type:"absorption", mechanism:"Iron and zinc compete for the divalent metal transporter DMT1 in the intestinal brush border at high supplemental doses.", effect:"High-dose iron supplements (>25mg) reduce zinc absorption; high-dose zinc reduces iron absorption. Food reduces this competition.", management:"Separate high-dose iron and zinc supplements. Taking with food largely eliminates this interaction.", evidence:"probable", onset:"acute", timing_note:"Separate by 2 hours when taking therapeutic doses" },
+  { drug:"Iron Supplements", drug_aliases:["iron","ferrous sulfate","ferrous gluconate","fe"], nutrient:"Calcium", nutrient_aliases:["calcium","ca"], severity:"minor", direction:"nutrient_affects_drug", type:"absorption", mechanism:"Calcium inhibits non-heme iron absorption at the intestinal level, competing for DMT1 and other transport mechanisms.", effect:"Concurrent calcium (>300mg) reduces non-heme iron absorption by 30–50%.", management:"Separate iron and calcium supplements by 2 hours when treating iron deficiency.", evidence:"established", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Zinc", drug_aliases:["zinc","zn","zinc picolinate","zinc citrate","zinc gluconate","zinc sulfate","zinc bisglycinate"], nutrient:"Copper", nutrient_aliases:["copper","cu"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"High zinc intake induces intestinal metallothionein, which has higher affinity for copper than zinc, trapping copper in intestinal cells and reducing systemic copper absorption.", effect:"Copper deficiency with chronic high-dose zinc supplementation (>50mg/day): sideroblastic anemia, neutropenia, neurological symptoms (myelopathy).", management:"Supplement copper (1–2mg/day) when using therapeutic zinc doses >40mg/day long-term. Typical 8–15mg/day supplementation is safe.", evidence:"established", onset:"chronic", timing_note:"Risk with >50mg/day zinc for >3 months" },
+  { drug:"Omega-3 / Fish Oil", drug_aliases:["fish oil","omega 3","omega-3","epa","dha","fish oil supplement","fatty acids"], nutrient:"Anticoagulants / Antiplatelets", nutrient_aliases:["warfarin","aspirin","clopidogrel"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Omega-3 fatty acids (EPA+DHA) inhibit platelet thromboxane A2 synthesis and platelet aggregation at doses >3g/day. Additive with warfarin and antiplatelet drugs.", effect:"Enhanced bleeding risk with high-dose fish oil plus anticoagulants/antiplatelets.", management:"Doses <1g/day: generally safe. 1–3g/day: monitor if on anticoagulants. >3g/day: monitor INR in warfarin patients.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Aspirin / NSAIDs", drug_aliases:["aspirin","ibuprofen","naproxen","diclofenac","celecoxib","nsaid","nsaids","advil","motrin","aleve","voltaren"], nutrient:"Vitamin C", nutrient_aliases:["vitamin c","ascorbic acid"], severity:"minor", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Aspirin increases urinary excretion of vitamin C and may impair its cellular uptake.", effect:"Mild vitamin C depletion with chronic aspirin use.", management:"Consider vitamin C supplementation (200–500mg/day) in chronic aspirin users.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Aspirin / NSAIDs", drug_aliases:["aspirin","ibuprofen","naproxen","diclofenac","nsaid","nsaids","advil","motrin"], nutrient:"Iron", nutrient_aliases:["iron","fe"], severity:"moderate", direction:"drug_affects_nutrient", type:"depletion", mechanism:"Chronic NSAID use damages gastric and intestinal mucosa, causing occult GI blood loss and iron depletion.", effect:"Iron deficiency anemia from chronic GI blood loss.", management:"Monitor hemoglobin and ferritin in chronic NSAID users. Use PPI for GI protection. Supplement iron if deficient.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Vitamin D", drug_aliases:["vitamin d","vit d","d3","cholecalciferol","d2","ergocalciferol","calcitriol","alfacalcidol"], nutrient:"Magnesium", nutrient_aliases:["magnesium","mg"], severity:"informational", direction:"bidirectional", type:"cofactor", mechanism:"Magnesium is a required cofactor for vitamin D activation — both 25-hydroxylation (liver) and 1-hydroxylation (kidney) require magnesium-dependent enzymes. Vitamin D also increases magnesium absorption.", effect:"Magnesium deficiency can impair vitamin D activation, causing apparent 'vitamin D resistance.' High-dose vitamin D may deplete magnesium stores.", management:"Ensure adequate magnesium intake when supplementing with vitamin D (especially at high doses). Correct magnesium deficiency first if vitamin D supplementation appears ineffective.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Sulfasalazine", drug_aliases:["sulfasalazine","azulfidine","salazopyrin"], nutrient:"Folate", nutrient_aliases:["folate","folic acid","b9"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Sulfasalazine competitively inhibits the proton-coupled folate transporter (PCFT), reducing intestinal folate absorption.", effect:"Folate deficiency — megaloblastic anemia, increased homocysteine.", management:"Supplement with folate (1mg/day) in all patients on long-term sulfasalazine. This is standard co-prescribing.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"H2 Blockers", drug_aliases:["famotidine","ranitidine","cimetidine","nizatidine","pepcid","zantac","h2 blocker","h2 receptor antagonist"], nutrient:"Vitamin B12", nutrient_aliases:["b12","cobalamin"], severity:"minor", direction:"drug_affects_nutrient", type:"absorption", mechanism:"H2 blockers reduce gastric acid, impairing pepsin-mediated B12 release from food proteins (less severe than PPIs).", effect:"Mild B12 depletion with chronic use; crystalline B12 supplements not affected.", management:"Monitor B12 in long-term H2 blocker users. Use crystalline B12 supplements if deficient.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Colchicine", drug_aliases:["colchicine","colcrys"], nutrient:"Vitamin B12", nutrient_aliases:["b12","cobalamin","cyanocobalamin"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Colchicine causes dose-dependent enterocyte damage in the ileum, impairing the ileal receptor (cubam) responsible for intrinsic factor-B12 complex absorption.", effect:"B12 malabsorption with long-term use; risk of B12 deficiency neuropathy and anemia.", management:"Monitor B12 levels in patients on long-term colchicine. Supplement if deficient.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Niacin (High Dose)", drug_aliases:["niacin","nicotinic acid","niaspan","extended-release niacin","high dose niacin"], nutrient:"Blood Glucose Control", nutrient_aliases:["insulin","blood glucose","glycemic control","diabetes"], severity:"moderate", direction:"drug_affects_nutrient", type:"pharmacodynamic", mechanism:"High-dose nicotinic acid (≥1g/day) impairs insulin-mediated glucose uptake and increases hepatic glucose output.", effect:"Worsened glycemic control in diabetics; may require adjustment of antidiabetic medications.", management:"Monitor blood glucose closely when starting high-dose niacin in diabetics. May require dose adjustment of antidiabetic medications.", evidence:"established", onset:"chronic", timing_note:null },
+  { drug:"Vitamin E (High Dose)", drug_aliases:["vitamin e","tocopherol","alpha tocopherol","vit e","high dose vitamin e"], nutrient:"Vitamin K / Anticoagulants", nutrient_aliases:["warfarin","vitamin k","anticoagulant","coumadin"], severity:"moderate", direction:"drug_affects_nutrient", type:"pharmacodynamic", mechanism:"High-dose vitamin E (>400 IU/day) inhibits vitamin K-dependent carboxylation of clotting factors and inhibits platelet aggregation.", effect:"Enhanced anticoagulant and antiplatelet effect; increased bleeding risk.", management:"Limit vitamin E to ≤200 IU/day with anticoagulant therapy. Monitor INR. Avoid high-dose vitamin E before surgery.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Folate / Folic Acid", drug_aliases:["folate","folic acid","b9","5-mthf","methylfolate","l-methylfolate","vitamin b9"], nutrient:"Methotrexate", nutrient_aliases:["methotrexate","mtx"], severity:"moderate", direction:"nutrient_affects_drug", type:"pharmacodynamic", mechanism:"Folate supplementation replenishes the folate pool depleted by methotrexate's DHFR inhibition, reducing GI and hematological toxicity.", effect:"Reduced methotrexate toxicity (mucositis, GI side effects, hepatotoxicity, anemia). Does not significantly reduce therapeutic efficacy at rheumatologic doses.", management:"BENEFICIAL: Routine folate supplementation is standard of care with MTX. Take on non-MTX days (or daily except MTX day).", evidence:"established", onset:"chronic", timing_note:"Take on non-methotrexate days" },
+  { drug:"Magnesium", drug_aliases:["magnesium","mg","magnesium citrate","magnesium glycinate","magnesium oxide","magnesium malate","magnesium threonate"], nutrient:"Fluoroquinolones / Tetracyclines", nutrient_aliases:["ciprofloxacin","levofloxacin","doxycycline","tetracycline","fluoroquinolone","antibiotic"], severity:"major", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Magnesium forms chelate complexes with fluoroquinolones and tetracyclines in the GI tract, reducing antibiotic absorption dramatically.", effect:"Antibiotic treatment failure due to poor bioavailability.", management:"Separate magnesium from fluoroquinolones by 2 hours before or 6 hours after; from tetracyclines by 2–4 hours.", evidence:"established", onset:"acute", timing_note:"Separate by 2–6 hours depending on antibiotic class" },
+  { drug:"Magnesium", drug_aliases:["magnesium","mg","magnesium citrate","magnesium glycinate","magnesium oxide"], nutrient:"Bisphosphonates", nutrient_aliases:["alendronate","risedronate","fosamax","actonel"], severity:"moderate", direction:"drug_affects_nutrient", type:"absorption", mechanism:"Magnesium chelates bisphosphonates in the GI tract, significantly reducing their already-poor oral bioavailability.", effect:"Reduced bisphosphonate absorption and osteoporosis treatment efficacy.", management:"Separate magnesium from bisphosphonates by at least 2 hours. Take bisphosphonate on empty stomach with plain water.", evidence:"established", onset:"acute", timing_note:"Take bisphosphonate on empty stomach; delay all supplements" },
+  { drug:"Coenzyme Q10", drug_aliases:["coq10","ubiquinol","ubiquinone","q10","coenzyme q10"], nutrient:"Warfarin", nutrient_aliases:["warfarin","coumadin"], severity:"moderate", direction:"bidirectional", type:"pharmacodynamic", mechanism:"CoQ10 has structural similarity to vitamin K2 (menaquinone ring) and may exert mild vitamin K-like pro-coagulant activity.", effect:"May reduce anticoagulant effect of warfarin; decreased INR reported in some patients.", management:"Monitor INR if starting or stopping CoQ10 supplementation. Adjust warfarin dose as needed.", evidence:"possible", onset:"chronic", timing_note:null },
+  { drug:"Vitamin K", drug_aliases:["vitamin k","vit k","k1","k2","phylloquinone","menaquinone","mk-4","mk-7"], nutrient:"Broad-Spectrum Antibiotics", nutrient_aliases:["antibiotics","broad spectrum antibiotics","ciprofloxacin","amoxicillin","azithromycin","cephalosporins"], severity:"moderate", direction:"bidirectional", type:"depletion", mechanism:"Gut bacteria (primarily Bacteroides species) produce vitamin K2 (menaquinones). Broad-spectrum antibiotics reduce this gut flora contribution to vitamin K status.", effect:"Reduced vitamin K2 production; may worsen anticoagulant effect of warfarin in patients on both antibiotics and warfarin.", management:"Monitor INR closely in warfarin patients starting antibiotics. Consider vitamin K supplementation in patients with poor dietary intake on long antibiotic courses.", evidence:"probable", onset:"chronic", timing_note:null },
+  { drug:"Calcium", drug_aliases:["calcium","ca","calcium carbonate","calcium citrate","calcium supplement","dairy"], nutrient:"Zinc", nutrient_aliases:["zinc","zn"], severity:"minor", direction:"bidirectional", type:"absorption", mechanism:"High calcium intake competes with zinc for intestinal absorption transporters.", effect:"High calcium doses (>1500mg) may reduce zinc absorption.", management:"Separate high-dose calcium and zinc supplements by at least 2 hours.", evidence:"probable", onset:"acute", timing_note:"Separate by 2 hours" },
+  { drug:"Vitamin C", drug_aliases:["vitamin c","ascorbic acid","ascorbate","vit c","ascorbyl palmitate"], nutrient:"Iron Absorption", nutrient_aliases:["iron","non-heme iron","ferrous","ferric"], severity:"informational", direction:"bidirectional", type:"enhancement", mechanism:"Ascorbic acid reduces Fe3+ to Fe2+ and forms a soluble chelate that prevents iron precipitation, dramatically enhancing non-heme iron absorption.", effect:"3–6 fold increase in non-heme iron absorption. Also facilitates cellular iron uptake.", management:"BENEFICIAL: Pair vitamin C-rich foods or supplements with iron-rich plant foods to maximize iron absorption.", evidence:"established", onset:"acute", timing_note:"Take simultaneously for maximum effect" },
+];
+
+// ── Search ──
+function normalizeQ(q) {
+  return q.toLowerCase().replace(/[^a-z0-9 ]/g,' ').trim();
+}
+function tokScore(text, tokens) {
+  const t = normalizeQ(String(text||''));
+  let s = 0;
+  for (const tok of tokens) {
+    if (t === tok) s += 12;
+    else if (t.startsWith(tok)) s += 7;
+    else if (t.includes(tok)) s += 3;
+  }
+  return s;
+}
+function doSearch(raw) {
+  const norm = normalizeQ(raw);
+  const tokens = norm.split(' ').filter(t => t.length > 1);
+  if (!tokens.length) return [];
+  const SEV = { major:0, moderate:1, minor:2, informational:3 };
+  return DB
+    .map(ix => {
+      const ds = Math.max(tokScore(ix.drug,tokens), ...(ix.drug_aliases||[]).map(a=>tokScore(a,tokens)));
+      const ns = Math.max(tokScore(ix.nutrient,tokens), ...(ix.nutrient_aliases||[]).map(a=>tokScore(a,tokens)));
+      return { ix, score: Math.max(ds, ns) };
+    })
+    .filter(r => r.score > 0)
+    .sort((a,b) => b.score !== a.score ? b.score-a.score : (SEV[a.ix.severity]??4)-(SEV[b.ix.severity]??4))
+    .map(r => r.ix);
+}
+
+// ── Render ──
+const SEV_ORDER = ['major','moderate','minor','informational'];
+const DIR_LABELS = {
+  drug_affects_nutrient: 'Drug depletes / affects nutrient',
+  nutrient_affects_drug: 'Nutrient affects drug',
+  bidirectional: 'Bidirectional interaction'
+};
+const EV_COLORS = { established:'ev-established', probable:'ev-probable', possible:'ev-possible', theoretical:'ev-theoretical' };
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cap(s){ return s ? s[0].toUpperCase()+s.slice(1) : ''; }
+
+function renderResults(results, query) {
+  document.getElementById('emptyState').style.display = 'none';
+  const rh = document.getElementById('resultsHeader');
+  const sb = document.getElementById('severityBar');
+  rh.style.display = 'flex';
+  sb.style.display = 'flex';
+
+  document.getElementById('resultsTitle').textContent = `${results.length} interaction${results.length!==1?'s':''} found`;
+  document.getElementById('resultsSubtitle').textContent = `Showing results for "${query}"`;
+
+  // severity summary
+  const counts = {};
+  results.forEach(ix => { counts[ix.severity] = (counts[ix.severity]||0)+1; });
+  sb.innerHTML = SEV_ORDER
+    .filter(s => counts[s])
+    .map(s => `<div class="sev-pill ${s}"><div class="sev-dot"></div>${cap(s)} (${counts[s]})</div>`)
+    .join('');
+
+  // group by severity
+  const cards = document.getElementById('cards');
+  if (!results.length) {
+    cards.innerHTML = `<div class="no-results"><h3>No interactions found for "${esc(query)}"</h3><p>Try a different spelling, generic name, or check an alias (e.g. "Glucophage" for Metformin).</p></div>`;
+    return;
+  }
+
+  let html = '';
+  let lastSev = null;
+  results.forEach((ix, i) => {
+    if (ix.severity !== lastSev) {
+      html += `<div class="section-label">${cap(ix.severity)} interactions</div>`;
+      lastSev = ix.severity;
+    }
+    html += buildCard(ix, i);
+  });
+  cards.innerHTML = html;
+}
+
+function buildCard(ix, i) {
+  const counterpart = ix.direction === 'drug_affects_nutrient' ? ix.nutrient : ix.drug;
+  const dirLabel = DIR_LABELS[ix.direction] || ix.direction;
+  const evClass = EV_COLORS[ix.evidence] || 'ev-theoretical';
+
+  return `
+  <div class="card" id="card-${i}">
+    <div class="card-header" onclick="toggleCard(${i})">
+      <span class="sev-badge badge-${ix.severity}">${cap(ix.severity)}</span>
+      <div class="card-title-wrap">
+        <div class="card-title">${esc(ix.drug)} ↔ ${esc(ix.nutrient)}</div>
+        <div class="card-sub">${esc(dirLabel)} · ${esc(cap(ix.onset)||'')}</div>
+      </div>
+      <span class="ev-tag ${evClass}">${esc(cap(ix.evidence||''))}</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="card-divider"></div>
+      <div class="detail-grid">
+        <div class="detail-item detail-full">
+          <div class="detail-label">Mechanism</div>
+          <div class="detail-value">${esc(ix.mechanism)}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Clinical Effect</div>
+          <div class="detail-value">${esc(ix.effect)}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Interaction Type</div>
+          <div class="detail-value">${esc(cap(ix.type||''))} · Onset: ${esc(cap(ix.onset||''))}</div>
+        </div>
+      </div>
+      <div class="mgmt-box"><strong>Clinical Recommendation: </strong>${esc(ix.management)}</div>
+      ${ix.timing_note ? `<div class="timing-box">${esc(ix.timing_note)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleCard(i) {
+  document.getElementById('card-'+i).classList.toggle('open');
+}
+
+// ── Export ──
+let lastResults = [];
+function exportCSV() {
+  if (!lastResults.length) return;
+  const rows = [['Drug/Class','Nutrient','Severity','Direction','Evidence','Onset','Mechanism','Effect','Management','Timing Note']];
+  lastResults.forEach(ix => {
+    rows.push([ix.drug, ix.nutrient, ix.severity, ix.direction, ix.evidence, ix.onset,
+      ix.mechanism, ix.effect, ix.management, ix.timing_note||''].map(v => `"${String(v||'').replace(/"/g,'""')}"`));
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = Object.assign(document.createElement('a'), {href:URL.createObjectURL(blob), download:`drug-nutrient-interactions.csv`});
+  a.click();
+}
+
+// ── Search action ──
+function go(q) {
+  document.getElementById('searchInput').value = q;
+  runSearch();
+}
+function runSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  document.getElementById('clearBtn').style.display = 'flex';
+  lastResults = doSearch(q);
+  renderResults(lastResults, q);
+  document.getElementById('cards').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── Init ──
+document.getElementById('searchBtn').onclick = runSearch;
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key==='Enter') runSearch(); });
+document.getElementById('searchInput').addEventListener('input', function() {
+  document.getElementById('clearBtn').style.display = this.value ? 'flex' : 'none';
+});
+document.getElementById('clearBtn').onclick = function() {
+  document.getElementById('searchInput').value = '';
+  this.style.display = 'none';
+  document.getElementById('cards').innerHTML = '';
+  document.getElementById('resultsHeader').style.display = 'none';
+  document.getElementById('severityBar').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+};
+
+// ── Stats ──
+(function() {
+  const total = DB.length;
+  const major = DB.filter(x=>x.severity==='major').length;
+  const drugs = new Set(DB.map(x=>x.drug)).size;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statMajor').textContent = major;
+  document.getElementById('statDrugs').textContent = drugs;
+  document.getElementById('headerCount').textContent = `${total} interactions · ${drugs} drug classes`;
+})();
+</script>
+</body>
+</html>
